@@ -4,7 +4,7 @@ A CS Girlies Hackathon Project
 
 SAGA is an AI-powered learning companion designed to make studying feel like texting your smartest, kindest friend. No dashboards. No clutter. No overwhelming explanations. Just simple, human language that meets you where you are.
 
-Type in anything you’re stuck on — recursion, Big-O, inflation, pointers, literally anything — and SAGA breaks it down into clean, friendly explanations you actually understand. You can ask follow-ups, request examples, or switch to a more “tutor” or “pro” tone if you need deeper detail.
+Type in anything you’re stuck on recursion, Big-O, inflation, pointers, literally anything, and SAGA breaks it down into clean, friendly explanations you actually understand. You can ask follow-ups, request examples, or switch to a more “tutor” or “pro” tone if you need deeper detail.
 
 SAGA was built by two women in software engineering who understand what it feels like to struggle silently through confusing topics. We wanted a tool that *gets us*, talks like us, and makes learning less intimidating and more conversational.
 
