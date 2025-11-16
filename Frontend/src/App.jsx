@@ -1,39 +1,51 @@
 // Frontend/src/App.jsx
 import React, { useState, useEffect, useRef } from "react";
+import "./App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5001";
-
-const SUGGESTIONS = [
-  'Explain recursion like I\'m 12',
-  'Give me a real-world analogy for binary search',
-  'Summarize Big-O in 3 bullet points',
-  'Break down inflation step-by-step'
-];
 
 function App() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
       content:
-        "Hey, I’m SAGA 👋 Text me any topic and I’ll break it down for you—clearly, simply, and conversationally."
-    }
+        "Hey, I’m SAGA 👋 Text me any topic and I’ll break it down for you—clearly, simply, and conversationally.",
+    },
   ]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState("openai");
-  const [style, setStyle] = useState("friendly");
+  const [tone, setTone] = useState("friendly"); // friendly | tutor | pro
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef(null);
 
-  // auto scroll to bottom when new message arrives
+  // Auto scroll to bottom when new message arrives
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, loading]);
 
-  const handleSend = async () => {
-    const trimmed = input.trim();
+  const quickFollowups = [
+    { label: "Explain simpler", prompt: "Please explain that in simpler terms." },
+    { label: "Give an example", prompt: "Give me a real-world example of this." },
+    { label: "Go deeper", prompt: "Go a bit deeper into the details." },
+    {
+      label: "Summarize this chat",
+      prompt: "Summarize this whole chat in 3–4 bullet points.",
+    },
+  ];
+
+  const quickStarters = [
+    'Explain recursion like I\'m 12',
+    "Give me a real-world analogy for binary search",
+    "Summarize Big-O in 3 bullet points",
+    "Break down inflation step-by-step",
+  ];
+
+  const sendMessage = async (overrideText = null) => {
+    const raw = overrideText ?? input;
+    const trimmed = raw.trim();
     if (!trimmed || loading) return;
 
     const newMessages = [...messages, { role: "user", content: trimmed }];
@@ -48,9 +60,9 @@ function App() {
         body: JSON.stringify({
           message: trimmed,
           provider,
-          style,
-          history: newMessages
-        })
+          history: newMessages,
+          tone, // important: keep sending tone to backend
+        }),
       });
 
       if (!res.ok) throw new Error("Request failed");
@@ -62,7 +74,7 @@ function App() {
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: replyText }
+        { role: "assistant", content: replyText },
       ]);
     } catch (err) {
       console.error(err);
@@ -71,67 +83,76 @@ function App() {
         {
           role: "assistant",
           content:
-            "Oops, something went wrong talking to the server. Check your connection or try again in a bit."
-        }
+            "Oops, something went wrong talking to the server. Check your connection or try again in a bit.",
+        },
       ]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSend = () => sendMessage();
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      sendMessage();
     }
   };
 
-  const handleSuggestionClick = (text) => {
-    setInput(text);
+  const handleQuickFollowup = (prompt) => {
+    sendMessage(prompt);
+  };
+
+  const handleQuickStarter = (prompt) => {
+    setInput(prompt);
+    // If you want it to auto-send on click, uncomment:
+    // sendMessage(prompt);
   };
 
   return (
     <div className="app">
-      <header className="header">
-        <div>
-          <h1>SAGA</h1>
-          <p className="tagline">
-            A texting-style AI that explains anything — clearly.
-          </p>
-        </div>
-
-        {/* Top-right controls (no light/dark toggle) */}
-        <div className="header-controls">
-          <div className="control">
-            <label className="control-label">Style</label>
-            <select
-              className="select"
-              value={style}
-              onChange={(e) => setStyle(e.target.value)}
-            >
-              <option value="friendly">Friendly</option>
-              <option value="study_buddy">Study buddy</option>
-              <option value="concise">Concise</option>
-              <option value="affirming">Affirming</option>
-            </select>
-          </div>
-
-          <div className="control">
-            <label className="control-label">Model</label>
-            <select
-              className="select"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-            >
-              <option value="openai">OpenAI</option>
-              <option value="claude">Claude</option>
-            </select>
-          </div>
-        </div>
-      </header>
-
       <main className="chat-card">
-        <div className="messages">
+        {/* Header */}
+        <header className="header">
+          <div className="title-block">
+            <h1>SAGA</h1>
+            <p className="tagline">
+              A texting-style AI that explains anything — clearly.
+            </p>
+          </div>
+
+          <div className="controls">
+            <div className="control">
+              <span className="control-label">Style</span>
+              <select
+                className="control-select"
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+              >
+                <option value="friendly">Friendly</option>
+                <option value="tutor">Tutor</option>
+                <option value="pro">Pro</option>
+              </select>
+            </div>
+
+            <div className="control">
+              <span className="control-label">Model</span>
+              <select
+                className="control-select"
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+              >
+                <option value="openai">OpenAI</option>
+                {/* keep Claude option if you want to add it later */}
+                {/* <option value="claude">Claude</option> */}
+              </select>
+            </div>
+          </div>
+        </header>
+
+        {/* Messages */}
+        <section className="messages">
           {messages.map((m, idx) => (
             <div
               key={idx}
@@ -140,8 +161,8 @@ function App() {
               }`}
             >
               <div
-                className={`message-bubble ${
-                  m.role === "user" ? "user-bubble" : "saga-bubble"
+                className={`bubble ${
+                  m.role === "user" ? "user-bubble" : "assistant-bubble"
                 }`}
               >
                 {m.content}
@@ -151,41 +172,50 @@ function App() {
 
           {loading && (
             <div className="message-row assistant-row">
-              <div className="message-bubble saga-bubble typing">
+              <div className="bubble assistant-bubble typing">
                 <span className="dot" />
                 <span className="dot" />
                 <span className="dot" />
               </div>
             </div>
           )}
-
           <div ref={messagesEndRef} />
-        </div>
+        </section>
 
-        {/* “Need more help?” actions bar – no upload button */}
-        <div className="followups">
-          <span className="followups-label">Need more help?</span>
-          <button className="followup-link">Explain simpler</button>
-          <button className="followup-link">Give an example</button>
-          <button className="followup-link">Go deeper</button>
-          <button className="followup-link">Summarize this chat</button>
-        </div>
+        {/* Quick actions */}
+        <section className="quick-section">
+          <div className="quick-row">
+            <span className="quick-label">Need more help?</span>
+            {quickFollowups.map((q) => (
+              <button
+                key={q.label}
+                className="chip"
+                type="button"
+                onClick={() => handleQuickFollowup(q.prompt)}
+                disabled={loading}
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Suggestions row – nicer chips, not a huge box */}
-        <div className="suggestions">
-          <span className="suggestions-label">Try:</span>
-          {SUGGESTIONS.map((s, i) => (
-            <button
-              key={i}
-              className="suggestion-pill"
-              type="button"
-              onClick={() => handleSuggestionClick(s)}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+          <div className="quick-row">
+            <span className="quick-label">Try:</span>
+            {quickStarters.map((q) => (
+              <button
+                key={q}
+                className="chip secondary-chip"
+                type="button"
+                onClick={() => handleQuickStarter(q)}
+                disabled={loading}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        </section>
 
+        {/* Input */}
         <div className="input-row">
           <textarea
             className="input"
@@ -202,11 +232,11 @@ function App() {
             {loading ? "Sending…" : "Send"}
           </button>
         </div>
-      </main>
 
-      <footer className="footer">
-        <p>Built with 💗 at the CS Girlies November Hackathon</p>
-      </footer>
+        <footer className="footer">
+          <p>Built with 💗 at the CS Girlies November Hackathon</p>
+        </footer>
+      </main>
     </div>
   );
 }
