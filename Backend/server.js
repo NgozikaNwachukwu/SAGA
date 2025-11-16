@@ -39,6 +39,19 @@ app.post("/api/message", async (req, res) => {
     return res.json({ reply: reply.trim() });
   } catch (err) {
     console.error("Error in /api/message:", err);
+
+    // Handle specific OpenAI errors
+    if (err.code === 'insufficient_quota') {
+      return res.json({
+        reply: "SAGA: Oops! It looks like your OpenAI account has reached its usage limit. To continue using this feature, you'll need to upgrade your OpenAI plan. You can do this on the OpenAI website. Thanks for understanding! 😊"
+      });
+    }
+    if (err.constructor && err.constructor.name === 'RateLimitError') {
+      return res.json({
+        reply: "SAGA: I'm getting a lot of requests right now and need to take a quick break. Please try again in a minute or so."
+      });
+    }
+
     return res
       .status(500)
       .json({ error: "Something went wrong talking to the AI." });
