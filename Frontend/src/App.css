@@ -191,3 +191,29 @@ body {
   color: var(--text-muted);
   text-align: center;
 }
+/* === SUGGESTION CHIP STYLING === */
+
+.suggestion-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 12px;
+}
+
+.suggestion-chip {
+  background: var(--assistant-bg);
+  color: var(--text-main);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(50, 20, 90, 0.05);
+}
+
+.suggestion-chip:hover {
+  background: #ece4ff;
+  transform: translateY(-1px);
+}

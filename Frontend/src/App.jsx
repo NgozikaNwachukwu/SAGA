@@ -14,12 +14,11 @@ function App() {
   ]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState("openai");
-  const [tone, setTone] = useState("friendly"); // friendly | tutor | pro
+  const [tone, setTone] = useState("friendly");
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef(null);
 
-  // Auto scroll to bottom when new message arrives
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -37,7 +36,7 @@ function App() {
   ];
 
   const quickStarters = [
-    'Explain recursion like I\'m 12',
+    `Explain recursion like I'm 12`,
     "Give me a real-world analogy for binary search",
     "Summarize Big-O in 3 bullet points",
     "Break down inflation step-by-step",
@@ -61,7 +60,7 @@ function App() {
           message: trimmed,
           provider,
           history: newMessages,
-          tone, // important: keep sending tone to backend
+          tone,
         }),
       });
 
@@ -100,14 +99,10 @@ function App() {
     }
   };
 
-  const handleQuickFollowup = (prompt) => {
-    sendMessage(prompt);
-  };
+  const handleQuickFollowup = (prompt) => sendMessage(prompt);
 
   const handleQuickStarter = (prompt) => {
     setInput(prompt);
-    // If you want it to auto-send on click, uncomment:
-    // sendMessage(prompt);
   };
 
   return (
@@ -144,8 +139,6 @@ function App() {
                 onChange={(e) => setProvider(e.target.value)}
               >
                 <option value="openai">OpenAI</option>
-                {/* keep Claude option if you want to add it later */}
-                {/* <option value="claude">Claude</option> */}
               </select>
             </div>
           </div>
@@ -179,38 +172,37 @@ function App() {
               </div>
             </div>
           )}
+
           <div ref={messagesEndRef} />
         </section>
 
         {/* Quick actions */}
         <section className="quick-section">
-          <div className="quick-row">
+          <div className="suggestion-row">
             <span className="quick-label">Need more help?</span>
+
             {quickFollowups.map((q) => (
-              <button
+              <div
                 key={q.label}
-                className="chip"
-                type="button"
+                className="suggestion-chip"
                 onClick={() => handleQuickFollowup(q.prompt)}
-                disabled={loading}
               >
                 {q.label}
-              </button>
+              </div>
             ))}
           </div>
 
-          <div className="quick-row">
+          <div className="suggestion-row">
             <span className="quick-label">Try:</span>
+
             {quickStarters.map((q) => (
-              <button
+              <div
                 key={q}
-                className="chip secondary-chip"
-                type="button"
+                className="suggestion-chip secondary-chip"
                 onClick={() => handleQuickStarter(q)}
-                disabled={loading}
               >
                 {q}
-              </button>
+              </div>
             ))}
           </div>
         </section>
