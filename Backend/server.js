@@ -12,6 +12,27 @@ const openaiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Helper: Clean Markdown + improve spacing
+function cleanText(text) {
+  if (!text) return "";
+
+  let cleaned = text;
+
+  // Remove bold markers **like this**
+  cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, "$1");
+
+  // Add spacing after periods (but not inside decimals like 3.14)
+  cleaned = cleaned.replace(/\. (?=[A-Z0-9])/g, ".\n\n");
+
+  // Add spacing after colons
+  cleaned = cleaned.replace(/: (?=[A-Z0-9])/g, ":\n\n");
+
+  // Remove stray markdown characters
+  cleaned = cleaned.replace(/[#_*`]/g, "");
+
+  return cleaned.trim();
+}
+
 // Health check
 app.get("/", (req, res) => {
   res.send("Saga backend is alive ✅ (port 5001, OpenAI connected)");
@@ -33,7 +54,7 @@ app.post("/api/message", async (req, res) => {
     const prompt = buildPrompt({ message, history, tone });
     const reply = await callOpenAI(prompt);
 
-    return res.json({ reply: reply.trim() });
+    return res.json({ reply: reply });
   } catch (err) {
     console.error("Error in /api/message:", err);
     return res
@@ -74,6 +95,7 @@ General rules:
 - Prefer short paragraphs and bullet points over long walls of text.
 - Assume the user is smart, just unfamiliar with the topic.
 - Use analogies and real-world examples whenever helpful.
+- Do NOT use Markdown formatting like **bold**, bullet syntax, or headings.
 - At the end, you may offer a small follow-up like:
   "If you want, I can simplify this more or give another example."
 
@@ -99,7 +121,7 @@ async function callOpenAI(prompt) {
       {
         role: "system",
         content:
-          "You are SAGA, a friendly AI explainer that makes any topic clear and approachable.",
+          "You are SAGA, a friendly AI explainer that makes any topic clear and approachable. Do not use Markdown formatting (no **bold**, no bullet syntax, no headings). Respond in plain text.",
       },
       {
         role: "user",
@@ -110,7 +132,8 @@ async function callOpenAI(prompt) {
     temperature: 0.7,
   });
 
-  return response.choices[0]?.message?.content || "";
+  const raw = response.choices[0]?.message?.content || "";
+  return cleanText(raw);
 }
 
 // Start server on PORT 5001

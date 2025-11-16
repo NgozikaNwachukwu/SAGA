@@ -1,65 +1,44 @@
-// frontend/src/App.jsx
+// Frontend/src/App.jsx
 import React, { useState, useEffect, useRef } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5001";
 
-// Default welcome message if no saved chat
-const DEFAULT_MESSAGES = [
-  {
-    role: "assistant",
-    content:
-      "Hey, I’m SAGA 👋 Text me any topic and I’ll break it down for you, clearly, simply, and conversationally.",
-  },
+const SUGGESTIONS = [
+  'Explain recursion like I\'m 12',
+  'Give me a real-world analogy for binary search',
+  'Summarize Big-O in 3 bullet points',
+  'Break down inflation step-by-step'
 ];
 
 function App() {
-  const [messages, setMessages] = useState(DEFAULT_MESSAGES);
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Hey, I’m SAGA 👋 Text me any topic and I’ll break it down for you—clearly, simply, and conversationally."
+    }
+  ]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState("openai");
+  const [style, setStyle] = useState("friendly");
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme] = useState("dark"); // "dark" | "light"
-  const [tone, setTone] = useState("friend"); // "friend" | "tutor" | "pro"
 
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
 
-  const suggestedPrompts = [
-    'Explain recursion like I\'m 12',
-    "Give me a real-world analogy for binary search",
-    "Summarize Big-O in 3 bullet points",
-    "Break down inflation step-by-step",
-  ];
-
-  // Load saved conversation from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("saga-messages");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-        }
-      } catch (_) {
-        // ignore parse errors and fall back to default
-      }
-    }
-  }, []);
-
-  // Save conversation to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("saga-messages", JSON.stringify(messages));
-  }, [messages]);
-
-  // Auto scroll to bottom when new message arrives
+  // auto scroll to bottom when new message arrives
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, loading]);
 
-  const sendToSaga = async ({ content, historyOverride }) => {
-    const newMessages = historyOverride || [...messages, { role: "user", content }];
+  const handleSend = async () => {
+    const trimmed = input.trim();
+    if (!trimmed || loading) return;
+
+    const newMessages = [...messages, { role: "user", content: trimmed }];
     setMessages(newMessages);
+    setInput("");
     setLoading(true);
 
     try {
@@ -67,11 +46,11 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: content,
+          message: trimmed,
           provider,
-          history: newMessages,
-          tone,
-        }),
+          style,
+          history: newMessages
+        })
       });
 
       if (!res.ok) throw new Error("Request failed");
@@ -83,7 +62,7 @@ function App() {
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: replyText },
+        { role: "assistant", content: replyText }
       ]);
     } catch (err) {
       console.error(err);
@@ -92,54 +71,12 @@ function App() {
         {
           role: "assistant",
           content:
-            "Oops, something went wrong talking to the server. Check your connection or try again in a bit.",
-        },
+            "Oops, something went wrong talking to the server. Check your connection or try again in a bit."
+        }
       ]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSend = async () => {
-    const trimmed = input.trim();
-    if (!trimmed || loading) return;
-
-    setInput("");
-    await sendToSaga({ content: trimmed });
-  };
-
-  const handleRefine = async (mode) => {
-    if (loading) return;
-
-    const lastAssistant = [...messages]
-      .reverse()
-      .find((m) => m.role === "assistant");
-
-    if (!lastAssistant) return;
-
-    let refinementInstruction = "";
-
-    if (mode === "simpler") {
-      refinementInstruction =
-        "Explain the last answer in simpler terms, like you're explaining it to someone new to the topic.";
-    } else if (mode === "example") {
-      refinementInstruction =
-        "Give a concrete, real-world example to help me understand the last answer.";
-    } else if (mode === "deeper") {
-      refinementInstruction =
-        "Go deeper into the last answer and add more technical detail while still keeping it clear.";
-    }
-
-    await sendToSaga({ content: refinementInstruction });
-  };
-
-  const handleSummary = async () => {
-    if (loading || messages.length === 0) return;
-
-    const summaryPrompt =
-      "Please summarize everything we've discussed so far into a short, structured study guide. Use headings and bullet points where it helps.";
-
-    await sendToSaga({ content: summaryPrompt });
   };
 
   const handleKeyDown = (e) => {
@@ -149,65 +86,47 @@ function App() {
     }
   };
 
-  const handleUploadClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const text = await file.text();
-    const truncated = text.slice(0, 3000); // keep it reasonable
-
-    setInput(`Explain this text for me:\n\n${truncated}`);
+  const handleSuggestionClick = (text) => {
+    setInput(text);
   };
 
   return (
-    <div className={`app ${theme}`}>
+    <div className="app">
       <header className="header">
-        <div className="header-left">
+        <div>
           <h1>SAGA</h1>
           <p className="tagline">
             A texting-style AI that explains anything — clearly.
           </p>
         </div>
 
-        <div className="header-right">
-          <div className="tone-selector">
-            <label htmlFor="tone-select">Style:</label>
+        {/* Top-right controls (no light/dark toggle) */}
+        <div className="header-controls">
+          <div className="control">
+            <label className="control-label">Style</label>
             <select
-              id="tone-select"
-              value={tone}
-              onChange={(e) => setTone(e.target.value)}
-              disabled={loading}
+              className="select"
+              value={style}
+              onChange={(e) => setStyle(e.target.value)}
             >
-              <option value="friend">Friendly</option>
-              <option value="tutor">Tutor</option>
-              <option value="pro">Professional</option>
+              <option value="friendly">Friendly</option>
+              <option value="study_buddy">Study buddy</option>
+              <option value="concise">Concise</option>
+              <option value="affirming">Affirming</option>
             </select>
           </div>
 
-          <button
-            className="theme-toggle"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
-          </button>
-
-          <select
-            className="provider-select"
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-          >
-            <option value="openai">OpenAI</option>
-            <option value="claude" disabled>
-              Claude (coming soon)
-            </option>
-          </select>
+          <div className="control">
+            <label className="control-label">Model</label>
+            <select
+              className="select"
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+            >
+              <option value="openai">OpenAI</option>
+              <option value="claude">Claude</option>
+            </select>
+          </div>
         </div>
       </header>
 
@@ -221,8 +140,8 @@ function App() {
               }`}
             >
               <div
-                className={`bubble ${
-                  m.role === "user" ? "user-bubble" : "assistant-bubble"
+                className={`message-bubble ${
+                  m.role === "user" ? "user-bubble" : "saga-bubble"
                 }`}
               >
                 {m.content}
@@ -232,7 +151,7 @@ function App() {
 
           {loading && (
             <div className="message-row assistant-row">
-              <div className="bubble assistant-bubble typing">
+              <div className="message-bubble saga-bubble typing">
                 <span className="dot" />
                 <span className="dot" />
                 <span className="dot" />
@@ -243,71 +162,30 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Refinement + summary actions */}
-        <div className="refine-row">
-          <span className="refine-label">Need more help?</span>
-          <button
-            onClick={() => handleRefine("simpler")}
-            disabled={loading || messages.length === 0}
-          >
-            Explain simpler
-          </button>
-          <button
-            onClick={() => handleRefine("example")}
-            disabled={loading || messages.length === 0}
-          >
-            Give an example
-          </button>
-          <button
-            onClick={() => handleRefine("deeper")}
-            disabled={loading || messages.length === 0}
-          >
-            Go deeper
-          </button>
-          <button
-            className="summary-btn"
-            onClick={handleSummary}
-            disabled={loading || messages.length === 0}
-          >
-            📝 Summarize this chat
-          </button>
+        {/* “Need more help?” actions bar – no upload button */}
+        <div className="followups">
+          <span className="followups-label">Need more help?</span>
+          <button className="followup-link">Explain simpler</button>
+          <button className="followup-link">Give an example</button>
+          <button className="followup-link">Go deeper</button>
+          <button className="followup-link">Summarize this chat</button>
         </div>
 
-        {/* Suggested prompts */}
-        <div className="suggested-row">
-          <span className="suggested-label">Try:</span>
-          {suggestedPrompts.map((text, idx) => (
+        {/* Suggestions row – nicer chips, not a huge box */}
+        <div className="suggestions">
+          <span className="suggestions-label">Try:</span>
+          {SUGGESTIONS.map((s, i) => (
             <button
-              key={idx}
-              className="suggested-chip"
-              onClick={() => setInput(text)}
-              disabled={loading}
+              key={i}
+              className="suggestion-pill"
+              type="button"
+              onClick={() => handleSuggestionClick(s)}
             >
-              {text}
+              {s}
             </button>
           ))}
         </div>
 
-        {/* Upload text file helper */}
-        <div className="upload-row">
-          <button
-            type="button"
-            onClick={handleUploadClick}
-            disabled={loading}
-            className="upload-btn"
-          >
-            📁 Upload .txt to explain
-          </button>
-          <input
-            type="file"
-            accept=".txt"
-            ref={fileInputRef}
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
-        </div>
-
-        {/* Input area */}
         <div className="input-row">
           <textarea
             className="input"
