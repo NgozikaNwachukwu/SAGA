@@ -8,7 +8,7 @@ function App() {
     {
       role: "assistant",
       content:
-        "Hey, I’m SAGA 👋 Text me any topic and I’ll break it down for you — clearly, simply, and conversationally."
+        "Hey, I’m SAGA 👋 Text me any topic and I’ll break it down for you, clearly, simply, and conversationally."
     }
   ]);
   const [input, setInput] = useState("");
